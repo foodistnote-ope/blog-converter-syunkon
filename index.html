@@ -1,0 +1,2512 @@
+<!DOCTYPE html>
+<!-- v1.1 — start/end marker support -->
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ブログ記事変換ツール｜山本ゆりさん専用</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563eb'/><path d='M28 32h44v8H28zm0 16h44v8H28zm0 16h28v8H28z' fill='%23fff'/></svg>">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --surface3: #ffffff;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --accent-dim: rgba(37, 99, 235, 0.08);
+      --accent2: #ef4444;
+      --green: #10b981;
+      --green-dim: rgba(16, 185, 129, 0.08);
+      --text: #0f172a;
+      --text2: #475569;
+      --text3: #94a3b8;
+      --radius: 12px;
+      --font: 'Noto Sans JP', 'Inter', sans-serif;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.3px;
+    }
+
+    .logo span {
+      color: var(--text2);
+      font-weight: 400;
+      font-size: 13px;
+      margin-left: 8px;
+    }
+
+    /* ===== URL INPUT ===== */
+    .url-bar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      outline: none;
+      transition: all .2s;
+    }
+
+    .url-input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+
+    .btn:hover {
+      opacity: .88;
+    }
+
+    .btn:active {
+      transform: scale(.97);
+    }
+
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      opacity: 1;
+    }
+
+    .btn-sm {
+      padding: 5px 11px;
+      font-size: 12px;
+      border-radius: 7px;
+    }
+
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+      border: none;
+    }
+
+    .btn-green:hover {
+      opacity: 0.9;
+      background: var(--green);
+    }
+
+    .status-bar {
+      padding: 10px 24px;
+      font-size: 13px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+
+    .spinner.show {
+      display: block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main {
+      display: flex;
+      align-items: flex-start;
+      /* 右パネルを自然な高さにする */
+    }
+
+    /* ===== LEFT PANEL (original) ===== */
+    .panel-original {
+      width: 320px;
+      min-width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      /* ページスクロール中も左に固定 */
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      /* 子の .original-text がスクロール */
+    }
+
+    .panel-original .panel-label {
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+
+    .original-text {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      font-size: 12.5px;
+      line-height: 1.8;
+      color: var(--text2);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .original-text:empty::before {
+      content: 'ここに取得した元テキストが表示されます';
+      color: var(--text3);
+    }
+
+    /* ===== RIGHT PANEL (columns) ===== */
+    .panel-columns {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ===== COLUMN CARD ===== */
+    .col-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: all .2s;
+      box-shadow: var(--shadow);
+    }
+
+    .col-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .col-card:focus-within {
+      border-color: var(--accent);
+    }
+
+    .col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .col-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text2);
+    }
+
+    .col-label .badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .col-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .copy-btn {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-family: var(--font);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .copy-btn.copied {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-dim);
+    }
+
+    .col-textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.8;
+      padding: 16px;
+      resize: none;
+      outline: none;
+      min-height: 50px;
+      overflow: hidden;
+    }
+
+    .col-textarea.tall {
+      min-height: 40px;
+    }
+
+    .col-textarea.xl {
+      min-height: 40px;
+    }
+
+    .col-textarea:empty::before {
+      content: attr(data-placeholder);
+      color: var(--text3);
+      pointer-events: none;
+    }
+
+    .col-textarea[contenteditable="true"]:empty:before {
+      content: attr(data-placeholder);
+      color: var(--text3);
+    }
+
+    /* ===== IMAGES PANEL ===== */
+    .panel-images {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+
+    .panel-images-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .panel-images-header:hover {
+      background: var(--surface3);
+    }
+
+    .panel-images-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .img-count {
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+    .toggle-arrow {
+      transition: transform .2s;
+      color: var(--text3);
+    }
+
+    .toggle-arrow.open {
+      transform: rotate(180deg);
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      padding: 14px 16px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .img-item {
+      position: relative;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--surface2);
+      transition: border-color .15s, transform .15s;
+      aspect-ratio: 1;
+    }
+
+    .img-item:hover {
+      border-color: var(--accent);
+      transform: scale(1.02);
+    }
+
+    .img-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .img-item .img-num {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      background: rgba(0, 0, 0, .7);
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .img-item .copy-url-btn {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, .75);
+      color: #fff;
+      font-size: 10px;
+      padding: 4px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+
+    .img-item:hover .copy-url-btn {
+      opacity: 1;
+    }
+
+    .img-item.copied-img {
+      border-color: var(--green);
+    }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      transform: translateY(60px);
+      opacity: 0;
+      transition: all .25s cubic-bezier(.34, 1.56, .64, 1);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .toast.error {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: var(--text3);
+      font-size: 13px;
+      padding: 40px;
+    }
+
+    .empty-icon {
+      font-size: 36px;
+      margin-bottom: 4px;
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text3);
+    }
+
+    /* ===== NOTE BADGE ===== */
+    .note {
+      font-size: 10px;
+      color: var(--accent2);
+      margin-left: 6px;
+      font-weight: normal;
+    }
+
+    /* ===== RANGE BAR ===== */
+    .range-bar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .range-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .range-label {
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 500;
+    }
+
+    .range-input {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 11px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .range-input:focus {
+      border-color: var(--accent);
+    }
+
+    .range-toggle {
+      background: none;
+      border: none;
+      color: var(--text2);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color .15s;
+      white-space: nowrap;
+    }
+
+    .range-toggle:hover {
+      color: var(--accent);
+    }
+
+    /* ===== WP PANEL ===== */
+    .wp-panel {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .wp-panel-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .wp-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      outline: none;
+      transition: border-color .2s;
+      min-width: 160px;
+    }
+
+    .wp-input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-wp {
+      background: linear-gradient(135deg, #0073aa, #005a87);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 9px 20px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,115,170,.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-wp:hover {
+      opacity: .9;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,115,170,.4);
+    }
+
+    .btn-wp:active {
+      transform: scale(.97);
+    }
+
+    .btn-wp:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .wp-result {
+      margin-top: 8px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+      line-height: 1.7;
+      width: 100%;
+    }
+
+    .wp-result.success {
+      background: var(--green-dim);
+      border: 1px solid var(--green);
+      color: #065f46;
+      display: block;
+    }
+
+    .wp-result.error {
+      background: rgba(239,68,68,.07);
+      border: 1px solid var(--accent2);
+      color: #991b1b;
+      display: block;
+    }
+
+    .wp-result a {
+      color: inherit;
+      font-weight: 600;
+      text-underline-offset: 2px;
+    }
+
+    .wp-result-raw {
+      margin-top: 8px;
+      background: rgba(0,0,0,.06);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 11.5px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .wp-result-raw.show {
+      display: block;
+    }
+
+    .wp-result-toggle {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      opacity: .7;
+      text-decoration: underline;
+      user-select: none;
+    }
+
+    .wp-result-toggle:hover { opacity: 1; }
+
+    .btn-wp-outline {
+      background: transparent;
+      border: 1.5px solid #0073aa;
+      color: #0073aa;
+      box-shadow: none;
+    }
+
+    .btn-wp-outline:hover {
+      background: rgba(0,115,170,.07);
+      box-shadow: none;
+    }
+
+    .wp-upload-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--text2);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: border-color .15s, color .15s;
+    }
+    .wp-upload-label:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .wp-upload-label input[type=checkbox] {
+      accent-color: var(--accent);
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+    .wp-upload-label .img-badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+
+    /* payload preview modal */
+    .payload-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .payload-overlay.show { display: flex; }
+    .payload-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: min(800px, 92vw);
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      overflow: hidden;
+    }
+    .payload-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .payload-modal-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .payload-modal-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text2);
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .payload-modal-close:hover { background: var(--border); }
+    .payload-modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 18px;
+    }
+    .payload-json {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--text);
+    }
+    .payload-meta {
+      font-size: 11.5px;
+      color: var(--text2);
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <div class="logo">ブログ記事変換ツール <span>山本ゆりさん専用</span></div>
+    <div style="margin-left:auto; display:flex; gap:8px;">
+      <button class="btn btn-outline btn-sm" onclick="clearAll()">クリア</button>
+    </div>
+  </div>
+
+  <!-- WP CREDENTIALS PANEL -->
+  <div class="wp-panel">
+    <div class="wp-panel-label">🔐 WordPress 認証</div>
+    <input class="wp-input" type="text" id="wpUsername" placeholder="ユーザー名" autocomplete="username" value="syunkon_yamamotoyuri">
+    <input class="wp-input" type="password" id="wpAppPassword" placeholder="アプリケーションパスワード" autocomplete="current-password" style="min-width:220px;">
+    <label class="wp-upload-label" id="wpUploadLabel" title="工程写真をWordPressメディアにアップロード">
+      <input type="checkbox" id="wpUploadImages" checked>
+      🖼️ 画像もアップロード
+      <span class="img-badge" id="wpImgBadge">0枚</span>
+    </label>
+    <button class="btn-wp btn-wp-outline" id="wpPreviewBtn" onclick="previewPayload()" title="送信するJSONを確認">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      ペイロード確認
+    </button>
+    <button class="btn-wp" id="wpPostBtn" onclick="postToWordPress()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      WordPressへ下書き投稿
+    </button>
+    <div class="wp-result" id="wpResult"></div>
+  </div>
+
+  <div class="url-bar">
+    <input class="url-input" type="text" id="urlInput" placeholder="https://ameblo.jp/syunkon/entry-xxxxxxxxxx.html"
+      value="">
+    <button class="btn-wp" id="fetchBtn" onclick="fetchBlog()" style="padding: 10px 24px; font-size: 14px;">取得</button>
+  </div>
+  <div class="range-bar" id="rangeBar" style="display:none">
+    <div class="range-field">
+      <label class="range-label">📌 テキスト開始位置（この文字から）</label>
+      <input class="range-input" id="startMarker" type="text" placeholder="例: 最初に言います。（空白=先頭から）">
+    </div>
+    <div class="range-field">
+      <label class="range-label">🏁 テキスト終了位置（この文字まで含める）</label>
+      <input class="range-input" id="endMarker" type="text" placeholder="例: A．太字の衝撃で忘れました。（空白=末尾まで）">
+    </div>
+    <div class="range-field">
+      <label class="range-label">🖼️ 画像取得開始位置（この文字以降の画像）</label>
+      <input class="range-input" id="imgStartMarker" type="text" placeholder="例: ＜作り方＞（空白=テキスト開始位置と同じ）">
+    </div>
+    <button class="btn-wp" onclick="reExtract()" title="範囲を変更して再抽出" style="padding: 7px 14px; font-size: 12px;">🔄 再抽出</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="spinner" id="spinner"></div>
+    <span id="statusText">URLを入力して「取得」ボタンを押してください</span>
+  </div>
+
+  <div class="main">
+    <!-- LEFT: original -->
+    <div class="panel-original">
+      <div class="panel-label">元テキスト (自動取得失敗時はここに直接貼り付けて「再抽出」)</div>
+      <div class="original-text" id="originalText" contenteditable="true" oninput="onOriginalTextInput()"></div>
+    </div>
+
+    <!-- RIGHT: columns -->
+    <div class="panel-columns" id="columnsPanel">
+      <div class="empty-state" id="emptyState">
+        <div>ブログ記事を取得すると<br>各カラムが自動で埋まります</div>
+      </div>
+
+      <!-- Lead Text -->
+      <div class="col-card" id="card-lead" style="display:none">
+        <div class="col-header">
+          <div class="col-label">リード文 <span class="badge">~120字</span></div>
+          <div class="col-actions">
+            <span id="lead-count" style="font-size:11px;color:var(--text2);">0字</span>
+            <button class="copy-btn btn-outline" onclick="regenerateLead()" title="テンプレートから再生成">🔄</button>
+            <button class="copy-btn" onclick="copyCol('lead')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea tall" id="col-lead" placeholder="リード文が自動生成されます"
+          oninput="updateLeadCount()"></textarea>
+      </div>
+
+      <!-- Recipe Name -->
+      <div class="col-card" id="card-name" style="display:none">
+        <div class="col-header">
+          <div class="col-label">レシピ名</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('name')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea" id="col-name" placeholder="レシピ名を入力" rows="2"></textarea>
+      </div>
+
+      <!-- Servings -->
+      <div class="col-card" id="card-servings" style="display:none">
+        <div class="col-header">
+          <div class="col-label">分量</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('servings')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea" id="col-servings" placeholder="例: 2人分" rows="1"></textarea>
+      </div>
+
+      <!-- Intro -->
+      <div class="col-card" id="card-intro" style="display:none">
+        <div class="col-header">
+          <div class="col-label">レシピ紹介文</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('intro')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea tall" id="col-intro" placeholder="レシピ紹介文"></textarea>
+      </div>
+
+      <!-- Ingredients -->
+      <div class="col-card" id="card-ingredients" style="display:none">
+        <div class="col-header">
+          <div class="col-label">材料</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('ingredients')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea tall" id="col-ingredients" placeholder="材料リスト"></textarea>
+      </div>
+
+      <!-- Steps -->
+      <div class="col-card" id="card-steps" style="display:none">
+        <div class="col-header">
+          <div class="col-label">作り方</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('steps')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea xl" id="col-steps" placeholder="作り方ステップ"></textarea>
+      </div>
+
+      <!-- One-point -->
+      <div class="col-card" id="card-onepoint" style="display:none">
+        <div class="col-header">
+          <div class="col-label">ワンポイントアドバイス</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('onepoint')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea tall" id="col-onepoint" placeholder="ワンポイントアドバイス"></textarea>
+      </div>
+
+      <!-- Free text -->
+      <div class="col-card" id="card-free" style="display:none">
+        <div class="col-header">
+          <div class="col-label">フリーテキスト</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('free')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea tall" id="col-free" placeholder="フリーテキスト（Q&amp;Aなど）"></textarea>
+      </div>
+
+      <!-- Cooking Time -->
+      <div class="col-card" id="card-cooking-time" style="display:none">
+        <div class="col-header">
+          <div class="col-label">調理時間 <span class="badge">acf.cooking_time</span></div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('cooking-time')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea" id="col-cooking-time" placeholder="例: 20分" rows="1"></textarea>
+      </div>
+
+      <!-- Expiration Date -->
+      <div class="col-card" id="card-expiration-date" style="display:none">
+        <div class="col-header">
+          <div class="col-label">保存期間 <span class="badge">acf.expiration_date</span></div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('expiration-date')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea" id="col-expiration-date" placeholder="例: 冷蔵保存3日" rows="1"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- IMAGES PANEL -->
+  <div class="panel-images" id="imagesPanel" style="display:none">
+    <div class="panel-images-header" onclick="toggleImages()">
+      <div class="panel-images-title">
+        🖼️ 工程写真
+        <span class="img-count" id="imgCount">0枚</span>
+      </div>
+      <div class="toggle-arrow" id="toggleArrow">▼</div>
+    </div>
+    <div class="image-grid" id="imageGrid"></div>
+  </div>
+
+  <!-- PAYLOAD PREVIEW MODAL -->
+  <div class="payload-overlay" id="payloadOverlay" onclick="if(event.target===this)closePayload()">
+    <div class="payload-modal">
+      <div class="payload-modal-header">
+        <div class="payload-modal-title">📤 送信ペイロード確認（実際に送信されるJSON）</div>
+        <button class="payload-modal-close" onclick="closePayload()" title="閉じる">✕</button>
+      </div>
+      <div class="payload-modal-body">
+        <div class="payload-meta" id="payloadMetaText"></div>
+        <pre class="payload-json" id="payloadJsonText"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============================================================
+    // WORDPRESS SETTINGS
+    // ============================================================
+    const WP_BASE_URL = 'https://foodistnote.recipe-blog.jp';
+    const WP_POST_TYPE_ENDPOINT = 'recipe'; // カスタム投稿タイプのRESTスラッグ
+
+    // ACFフィールド名マッピング（WordPress管理画面のフィールドキーに合わせて変更）
+    const WP_ACF_FIELDS = {
+      recipeName:    'recipe_name',       // レシピ名（ACFフィールド）
+      intro:         'recipe_introduction', // レシピ紹介文
+      servings:      'how_many_servings', // 分量
+      ingredients:   'material',         // 材料
+      steps:         'recipe_list',      // 作り方（繰り返しフィールド）
+      onepoint:      'advice',           // ワンポイントアドバイス
+      freeText:      'free_text',        // フリーテキスト
+      cookingTime:   'cooking_time',     // 調理時間
+      expirationDate:'expiration_date',  // 保存期間
+      explanationImages: 'recipe_explanation_images', // 工程写真（ギャラリー）
+      source:        'source',           // 出典（グループフィールド）
+      // リード文は未対応（ACFフィールドが確認できなかったため除外）
+    };
+
+    // ============================================================
+    // WORDPRESS DRAFT POST
+    // ============================================================
+    async function postToWordPress() {
+      const username  = document.getElementById('wpUsername').value.trim();
+      const appPw     = document.getElementById('wpAppPassword').value.trim();
+      const resultEl  = document.getElementById('wpResult');
+      const btn       = document.getElementById('wpPostBtn');
+
+      // --- バリデーション ---
+      resultEl.className = 'wp-result';
+      resultEl.textContent = '';
+
+      if (!username || !appPw) {
+        showWpResultHtml('error', '⚠️ ユーザー名とアプリケーションパスワードを入力してください。', '');
+        return;
+      }
+
+      const name = document.getElementById('col-name').value.trim();
+      if (!name) {
+        showWpResultHtml('error', '⚠️ レシピ名が空です。先にブログを取得または入力してください。', '');
+        return;
+      }
+
+      const sourceUrl = document.getElementById('urlInput').value.trim();
+      if (!sourceUrl) {
+        showWpResultHtml('error', '⚠️ 記事のURLが空です。投稿前にURLを入力（または取得）してください。', '');
+        return;
+      }
+
+      // --- 各フィールド取得 ---
+      const servings    = document.getElementById('col-servings').value.trim();
+      const intro       = document.getElementById('col-intro').value.trim();
+      const ingredients = document.getElementById('col-ingredients').value.trim();
+      const stepsRaw    = document.getElementById('col-steps').value.trim();
+      const onepoint    = document.getElementById('col-onepoint').value.trim();
+      const freeText    = document.getElementById('col-free').value.trim();
+      const cookingTime = document.getElementById('col-cooking-time').value.trim();
+      const expDate     = document.getElementById('col-expiration-date').value.trim();
+
+      // --- 認証ヘッダー生成 ---
+      const credentials = btoa(username + ':' + appPw);
+
+      // --- 作り方: 繰り返しフィールド（1行=1工程、空行除外、先頭番号除去）---
+      // 先頭番号の除去パターン: 「1. 」「。1.」「。1」「【１】」「（1）」「(1) 」「①②...」
+      const STEP_NUM_RE = /^(?:【\d+】|（\d+）|\(\d+\)|[\u2460-\u2473]|\d+[..。\s])[\s　]*/;
+      const stripStepNum = line => line.replace(STEP_NUM_RE, '').trim();
+
+      const stepsArray = stepsRaw
+        ? stepsRaw.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => ({ recipe_explanation: stripStepNum(line) }))
+        : [];
+
+      // --- ACFフィールド構築（未入力は除外）---
+      const acfData = {};
+      if (name)              acfData[WP_ACF_FIELDS.recipeName]     = name;
+      if (intro)             acfData[WP_ACF_FIELDS.intro]          = intro;
+      if (servings)          acfData[WP_ACF_FIELDS.servings]       = servings;
+      if (ingredients)       acfData[WP_ACF_FIELDS.ingredients]    = ingredients;
+      if (stepsArray.length) acfData[WP_ACF_FIELDS.steps]          = stepsArray;
+      if (onepoint)          acfData[WP_ACF_FIELDS.onepoint]       = onepoint;
+      if (freeText)          acfData[WP_ACF_FIELDS.freeText]       = freeText;
+      if (cookingTime)       acfData[WP_ACF_FIELDS.cookingTime]    = cookingTime;
+      if (expDate)           acfData[WP_ACF_FIELDS.expirationDate] = expDate;
+      acfData[WP_ACF_FIELDS.source] = {
+        text: '山本ゆりオフィシャルブログ「含み笑いのカフェごはん『syunkon』」で詳しく見る',
+        url: sourceUrl
+      };
+
+      // --- 送信開始 ---
+      btn.disabled = true;
+      document.getElementById('wpPreviewBtn').disabled = true;
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation:spin .7s linear infinite"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg> 投稿中...';
+
+      try {
+        // --- 画像アップロード（チェックボックスONの場合）---
+        const doUploadImages = document.getElementById('wpUploadImages').checked;
+        const uploadedIds = [];
+        const uploadErrors = [];
+
+        if (doUploadImages && _imageUrls.length > 0) {
+          showWpResultHtml('info', `🖼️ 画像をアップロード中... (0 / ${_imageUrls.length}枚)`, '');
+
+          for (let i = 0; i < _imageUrls.length; i++) {
+            showWpResultHtml('info',
+              `🖼️ 画像をアップロード中... (${i + 1} / ${_imageUrls.length}枚)`, '');
+            try {
+              const mediaId = await uploadImageToWp(_imageUrls[i], credentials, i);
+              uploadedIds.push(mediaId);
+            } catch (imgErr) {
+              console.warn(`画像${i + 1}アップロード失敗:`, imgErr);
+              uploadErrors.push(`画像${i + 1}: ${imgErr.message}`);
+            }
+          }
+
+          if (uploadErrors.length > 0) {
+            showWpResultHtml('error', '⚠️ 画像のアップロードに失敗したため、投稿処理を中止しました。<br>' + uploadErrors.map(escHtml).join('<br>'), '');
+            return;
+          }
+
+          if (uploadedIds.length > 0) {
+            acfData[WP_ACF_FIELDS.explanationImages] = uploadedIds;
+          }
+        }
+
+        // --- リクエストボディ（excerptは送信しない）---
+        const body = {
+          title:  name,
+          status: 'draft',
+          acf:    acfData,
+        };
+
+        // --- 投稿作成 ---
+        showWpResultHtml('info', '🔄 投稿を作成中...', '');
+        const endpoint = `${WP_BASE_URL}/wp-json/wp/v2/${WP_POST_TYPE_ENDPOINT}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Basic ' + credentials,
+          },
+          body: JSON.stringify(body),
+        });
+
+        // レスポンス本文を生テキストで取得
+        const rawText = await res.text().catch(() => '(レスポンス本文を取得できませんでした)');
+        let data = {};
+        try { data = JSON.parse(rawText); } catch (_) { /* non-JSON response */ }
+
+        if (res.ok) {
+          const postId  = data.id    || '?';
+          const status  = data.status || 'draft';
+          const link    = data.link   || '';
+          const editUrl = `${WP_BASE_URL}/wp-admin/post.php?post=${postId}&action=edit`;
+          const acfKeys = data.acf ? Object.keys(data.acf).join(', ') : '(なし)';
+          const receivedImages = data.acf && data.acf.recipe_explanation_images 
+            ? JSON.stringify(data.acf.recipe_explanation_images) 
+            : '(なし)';
+
+          const lines = [
+            `<strong>✅ 下書き作成完了</strong>`,
+            `投稿ID: <strong>${postId}</strong> &nbsp;|&nbsp; ステータス: ${status}`,
+          ];
+          if (doUploadImages) {
+            lines.push(`🖼️ 画像アップロード: ${uploadedIds.length}枚成功 / ${_imageUrls.length}枚` +
+              (uploadErrors.length ? ` (失敗: ${uploadErrors.length}枚)` : ''));
+            if (uploadErrors.length) {
+              lines.push(`⚠️ 失敗画像: ${escHtml(uploadErrors.join(' / '))}`);
+            }
+            if (uploadedIds.length > 0) {
+              lines.push(`送信したメディアID配列: <code>${escHtml(JSON.stringify(uploadedIds))}</code>`);
+              lines.push(`取得したメディアID配列: <code>${escHtml(receivedImages)}</code>`);
+            }
+          }
+          lines.push(
+            `<a href="${escHtml(editUrl)}" target="_blank" rel="noopener">🔗 WordPress管理画面で編集する</a>`,
+            link ? `<a href="${escHtml(link)}" target="_blank" rel="noopener">🌐 プレビューURL</a>` : '',
+            `ACFフィールド受信キー: ${escHtml(acfKeys)}`,
+          );
+          showWpResultHtml('success', lines.filter(Boolean).join('<br>'), rawText);
+        } else {
+          const code    = data.code    || `HTTP ${res.status}`;
+          const message = data.message || '(メッセージなし)';
+          const data2   = data.data ? JSON.stringify(data.data, null, 2) : '';
+          showWpResultHtml('error', [
+            `<strong>❌ 投稿失敗 (HTTP ${res.status} ${res.statusText})</strong>`,
+            `コード: <code>${escHtml(code)}</code>`,
+            `メッセージ: ${escHtml(message)}`,
+            data2 ? `詳細: <code>${escHtml(data2)}</code>` : '',
+          ].filter(Boolean).join('<br>'), rawText);
+        }
+      } catch (e) {
+        showWpResultHtml('error', [
+          `<strong>❌ 通信エラー: ${escHtml(e.message)}</strong>`,
+          `CORSエラーの可能性があります。ブラウザの開発者ツール（コンソール）で詳細を確認してください。`,
+        ].join('<br>'), '');
+      } finally {
+        btn.disabled = false;
+        document.getElementById('wpPreviewBtn').disabled = false;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> WordPressへ下書き投稿';
+      }
+    }
+
+    // HTML形式でWP結果を表示（生レスポンスも折りたたみで確認可能）
+    function showWpResultHtml(type, htmlContent, rawText) {
+      const el = document.getElementById('wpResult');
+      el.className = 'wp-result' + (type && type !== 'info' ? ' ' + type : '');
+      el.style.display = 'block';
+      const rawId = 'wpRaw_' + Date.now();
+      const rawSection = rawText
+        ? `<span class="wp-result-toggle" onclick="document.getElementById('${rawId}').classList.toggle('show')">▶ 生レスポンスを表示/非表示</span>
+           <div class="wp-result-raw" id="${rawId}">${escHtml(rawText.slice(0, 4000))}${rawText.length > 4000 ? '\n...(以下省略)' : ''}</div>`
+        : '';
+      el.innerHTML = htmlContent + '<br>' + rawSection;
+    }
+
+    // ============================================================
+    // 画像アップロード（/wp-json/wp/v2/media）
+    // ============================================================
+    async function uploadImageToWp(imageUrl, credentials, index) {
+      const proxies = [
+        { name: 'AllOrigins',  getUrl: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+        { name: 'CodeTabs',    getUrl: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
+        { name: 'CORSProxy',   getUrl: u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+      ];
+
+      // 1. プロキシ経由で画像blobを取得
+      let blob = null;
+      for (const proxy of proxies) {
+        try {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 15000);
+          const res = await fetch(proxy.getUrl(imageUrl), { signal: controller.signal });
+          clearTimeout(tid);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const b = await res.blob();
+          if (b.size < 500) throw new Error('データ不正');
+          // Canvasでリサイズ＆圧縮
+          blob = await resizeImageBlob(b);
+          break;
+        } catch (e) {
+          console.warn(`画像${index + 1} ${proxy.name}失敗:`, e.message);
+        }
+      }
+      if (!blob) throw new Error('全プロキシで画像取得失敗');
+
+      // 2. ファイル名・MIME決定（CanvasでJPG化済み）
+      let filename = imageUrl.split('/').pop().split('?')[0] || `image_${index + 1}.jpg`;
+      filename = filename.replace(/\.\w+$/, '') + '.jpg';
+      const mimeType = 'image/jpeg';
+
+      // 3. WPメディアにアップロード
+      const mediaEndpoint = `${WP_BASE_URL}/wp-json/wp/v2/media`;
+      const mediaRes = await fetch(mediaEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization':       'Basic ' + credentials,
+          'Content-Type':        mimeType,
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+        body: blob,
+      });
+
+      const mediaRaw = await mediaRes.text().catch(() => '');
+      let mediaData = {};
+      try { mediaData = JSON.parse(mediaRaw); } catch (_) {}
+
+      if (!mediaRes.ok) {
+        const msg = mediaData.message || mediaRaw.slice(0, 200);
+        throw new Error(`メディアアップロード失敗 HTTP ${mediaRes.status}: ${msg}`);
+      }
+
+      return mediaData.id; // メディアID
+    }
+
+    // ============================================================
+    // テスト: 単体画像アップロード
+    // ============================================================
+    async function testUploadSingleImage() {
+      const username = document.getElementById('wpUsername').value.trim();
+      const appPw    = document.getElementById('wpAppPassword').value.trim();
+      if (!username || !appPw) {
+        showWpResultHtml('error', '⚠️ ユーザー名とアプリケーションパスワードを入力してください。', '');
+        return;
+      }
+      if (!_imageUrls || _imageUrls.length === 0) {
+        showWpResultHtml('error', '⚠️ 画像がありません。先にブログを取得するか、画像が含まれる記事を指定してください。', '');
+        return;
+      }
+
+      const imageUrl = _imageUrls[0];
+      const credentials = btoa(username + ':' + appPw);
+      showWpResultHtml('info', '🔄 [テスト] 単体画像の取得とアップロードを開始します...', '');
+
+      // 1. Blob取得
+      const proxies = [
+        { name: 'AllOrigins',  getUrl: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+        { name: 'CodeTabs',    getUrl: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
+        { name: 'CORSProxy',   getUrl: u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+      ];
+
+      let blob = null;
+      let usedProxy = '';
+      for (const proxy of proxies) {
+        try {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 15000);
+          showWpResultHtml('info', `🔄 [テスト] 画像取得中... proxy = ${proxy.name}`, '');
+          const res = await fetch(proxy.getUrl(imageUrl), { signal: controller.signal });
+          clearTimeout(tid);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const b = await res.blob();
+          if (b.size < 500) throw new Error('データ不正 (size < 500)');
+          // Canvasでリサイズ＆圧縮
+          blob = await resizeImageBlob(b);
+          usedProxy = proxy.name;
+          break;
+        } catch (e) {
+          console.warn(`[TEST] 画像取得失敗 (${proxy.name}):`, e.message);
+        }
+      }
+
+      if (!blob) {
+        showWpResultHtml('error', '❌ [テスト] 全プロキシで画像取得に失敗しました。', '');
+        return;
+      }
+
+      // 取得情報表示（CanvasでJPG化済み）
+      let filename = imageUrl.split('/').pop().split('?')[0] || 'test_image.jpg';
+      filename = filename.replace(/\.\w+$/, '') + '.jpg';
+      const mimeType = 'image/jpeg';
+
+      const debugInfo = `✅ [テスト] 画像取得成功 (Proxy: ${usedProxy})<br>ファイル名: ${filename}<br>サイズ: ${blob.size} bytes<br>MIME: ${mimeType}`;
+      showWpResultHtml('info', debugInfo + '<br>🔄 メディアAPIへアップロード中...', '');
+
+      // アップロード
+      const mediaEndpoint = `${WP_BASE_URL}/wp-json/wp/v2/media`;
+      try {
+        const mediaRes = await fetch(mediaEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization':       'Basic ' + credentials,
+            'Content-Type':        mimeType,
+            'Content-Disposition': `attachment; filename="${filename}"`,
+          },
+          body: blob,
+        });
+
+        const rawText = await mediaRes.text().catch(() => '(レスポンス本文なし)');
+        
+        const reqInfo = `[リクエスト情報]
+URL: ${mediaEndpoint}
+Method: POST
+Headers: 
+  Authorization: Basic [MASKED]
+  Content-Type: ${mimeType}
+  Content-Disposition: attachment; filename="${filename}"
+`;
+
+        if (mediaRes.ok) {
+          let data = {};
+          try { data = JSON.parse(rawText); } catch (_) {}
+          showWpResultHtml('success', 
+            `<strong>✅ [テスト] メディアアップロード成功</strong><br>ID: ${data.id}<br>URL: <a href="${data.source_url}" target="_blank" rel="noopener">${data.source_url}</a>`, 
+            reqInfo + '\n\nレスポンス(HTTP ' + mediaRes.status + '):\n' + rawText);
+        } else {
+          showWpResultHtml('error', 
+            `<strong>❌ [テスト] アップロード失敗 HTTP ${mediaRes.status}</strong>`, 
+            reqInfo + '\n\nレスポンス(HTTP ' + mediaRes.status + '):\n' + rawText);
+        }
+      } catch (e) {
+        showWpResultHtml('error', `<strong>❌ [テスト] 通信エラー: ${escHtml(e.message)}</strong>`, '');
+      }
+    }
+
+    // 送信ペイロードをモーダルでプレビュー
+    function previewPayload() {
+      const name        = document.getElementById('col-name').value.trim();
+      const intro       = document.getElementById('col-intro').value.trim();
+      const servings    = document.getElementById('col-servings').value.trim();
+      const ingredients = document.getElementById('col-ingredients').value.trim();
+      const stepsRaw    = document.getElementById('col-steps').value.trim();
+      const onepoint    = document.getElementById('col-onepoint').value.trim();
+      const freeText    = document.getElementById('col-free').value.trim();
+      const cookingTime = document.getElementById('col-cooking-time').value.trim();
+      const expDate     = document.getElementById('col-expiration-date').value.trim();
+      const username    = document.getElementById('wpUsername').value.trim();
+      const sourceUrl   = document.getElementById('urlInput').value.trim();
+
+      if (!sourceUrl) {
+        alert('⚠️ 記事のURLが空です。投稿前にURLを入力（または取得）してください。');
+        return;
+      }
+
+      const STEP_NUM_RE_P = /^(?:【\d+】|（\d+）|\(\d+\)|[\u2460-\u2473]|\d+[..。\s])[\s　]*/;
+      const stepsArray = stepsRaw
+        ? stepsRaw.split('\n').map(l => l.trim()).filter(l => l)
+            .map(l => ({ recipe_explanation: l.replace(STEP_NUM_RE_P, '').trim() }))
+        : [];
+
+      const acfData = {};
+      if (name)              acfData[WP_ACF_FIELDS.recipeName]     = name;
+      if (intro)             acfData[WP_ACF_FIELDS.intro]          = intro;
+      if (servings)          acfData[WP_ACF_FIELDS.servings]       = servings;
+      if (ingredients)       acfData[WP_ACF_FIELDS.ingredients]    = ingredients;
+      if (stepsArray.length) acfData[WP_ACF_FIELDS.steps]          = stepsArray;
+      if (onepoint)          acfData[WP_ACF_FIELDS.onepoint]       = onepoint;
+      if (freeText)          acfData[WP_ACF_FIELDS.freeText]       = freeText;
+      if (cookingTime)       acfData[WP_ACF_FIELDS.cookingTime]    = cookingTime;
+      if (expDate)           acfData[WP_ACF_FIELDS.expirationDate] = expDate;
+      acfData[WP_ACF_FIELDS.source] = {
+        text: '山本ゆりオフィシャルブログ「含み笑いのカフェごはん『syunkon』」で詳しく見る',
+        url: sourceUrl
+      };
+
+      const payload = { title: name, status: 'draft', acf: acfData };
+      const endpoint = `${WP_BASE_URL}/wp-json/wp/v2/${WP_POST_TYPE_ENDPOINT}`;
+
+      document.getElementById('payloadMetaText').innerHTML =
+        `<strong>POST</strong> ${escHtml(endpoint)}<br>` +
+        `ユーザー名: <strong>${escHtml(username || '(未入力)')}</strong> &nbsp;|&nbsp; ` +
+        `作り方ステップ数: <strong>${stepsArray.length}</strong> ステップ`;
+      document.getElementById('payloadJsonText').textContent = JSON.stringify(payload, null, 2);
+      document.getElementById('payloadOverlay').classList.add('show');
+    }
+
+    function closePayload() {
+      document.getElementById('payloadOverlay').classList.remove('show');
+    }
+
+    // Esc key closes modal
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closePayload();
+    });
+
+    // ============================================================
+    // CORS PROXY
+    // ============================================================
+    const PROXY = 'https://corsproxy.io/?url=';
+
+    // Global state for re-extraction
+    let _rawBodyText = '';
+    let _rawTitle = '';
+    let _rawHtml = '';  // 画像フィルタリング用に生HTMLを保持
+    let _imageUrls  = [];  // 取得済み画像URLリスト（WPアップロード用）
+
+    // Apply start/end markers to text
+    function applyRange(text) {
+      const start = document.getElementById('startMarker').value.trim();
+      const end = document.getElementById('endMarker').value.trim();
+      let result = text;
+      if (start) {
+        const idx = result.indexOf(start);
+        if (idx !== -1) result = result.slice(idx);
+      }
+      if (end) {
+        const idx = result.indexOf(end);
+        if (idx !== -1) result = result.slice(0, idx + end.length);
+      }
+      return result;
+    }
+
+    // 生HTMLにstart/endマーカーを適用して画像URLを抽出
+    // 画像はimgStartMarker（未入力ならstartMarker）を使用
+    function extractImagesFromHtml(html) {
+      const imgStart = document.getElementById('imgStartMarker').value.trim()
+        || document.getElementById('startMarker').value.trim();
+      const end = document.getElementById('endMarker').value.trim();
+      let slice = html;
+      if (imgStart) {
+        const idx = slice.indexOf(imgStart);
+        if (idx !== -1) slice = slice.slice(idx);
+      }
+      if (end) {
+        const idx = slice.indexOf(end);
+        if (idx !== -1) slice = slice.slice(0, idx + end.length);
+      }
+      const imgRegex = /https:\/\/stat\.ameba\.jp\/user_images\/[^"'\s]+\.(?:jpg|jpeg|png|gif)/gi;
+      return [...new Set(slice.match(imgRegex) || [])];
+    }
+
+    // Re-extract columns with current marker values (no network call)
+    function reExtract() {
+      if (!_rawBodyText) { showToast('先にブログを取得してください', 'error'); return; }
+      const ranged = applyRange(_rawBodyText);
+      const sections = extractSections(ranged, _rawTitle);
+      setCol('name', sections.name);
+      setCol('servings', sections.servings);
+      setCol('intro', sections.intro);
+      setCol('ingredients', sections.ingredients);
+      setCol('steps', sections.steps);
+      setCol('onepoint', sections.onepoint);
+      setCol('free', sections.free);
+      // 調理時間・保存期間は自動抽出常はクリアしない（手動入力顏）
+      showCards();
+      // 画像もマーカー範囲で再フィルタリング
+      if (_rawHtml) {
+        const imgs = extractImagesFromHtml(_rawHtml);
+        if (imgs.length > 0) renderImages(imgs);
+        else document.getElementById('imagesPanel').style.display = 'none';
+      }
+      showToast('再抽出しました', 'success');
+    }
+
+    // ============================================================
+    // REGULATIONS - Apply all editorial rules
+    // Returns: corrected text
+    // ============================================================
+    function applyRegulations(text) {
+      if (!text) return '';
+
+      // 1. Full-width numbers → half-width
+      text = text.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+
+      // 2. Full-width units and common ASCII → half-width
+      const fwMap = {
+        'ａ': 'a', 'ｂ': 'b', 'ｃ': 'c', 'ｄ': 'd', 'ｅ': 'e', 'ｆ': 'f', 'ｇ': 'g', 'ｈ': 'h', 'ｉ': 'i',
+        'ｊ': 'j', 'ｋ': 'k', 'ｌ': 'l', 'ｍ': 'm', 'ｎ': 'n', 'ｏ': 'o', 'ｐ': 'p', 'ｑ': 'q', 'ｒ': 'r',
+        'ｓ': 's', 'ｔ': 't', 'ｕ': 'u', 'ｖ': 'v', 'ｗ': 'w', 'ｘ': 'x', 'ｙ': 'y', 'ｚ': 'z',
+        'Ａ': 'A', 'Ｂ': 'B', 'Ｃ': 'C', 'Ｄ': 'D', 'Ｅ': 'E', 'Ｆ': 'F', 'Ｇ': 'G', 'Ｈ': 'H', 'Ｉ': 'I',
+        'Ｊ': 'J', 'Ｋ': 'K', 'Ｌ': 'L', 'Ｍ': 'M', 'Ｎ': 'N', 'Ｏ': 'O', 'Ｐ': 'P', 'Ｑ': 'Q', 'Ｒ': 'R',
+        'Ｓ': 'S', 'Ｔ': 'T', 'Ｕ': 'U', 'Ｖ': 'V', 'Ｗ': 'W', 'Ｘ': 'X', 'Ｙ': 'Y', 'Ｚ': 'Z'
+      };
+      text = text.replace(/[ａ-ｚＡ-Ｚ]/g, s => fwMap[s] || s);
+
+      // 3. Symbol combinations: !! ?? !? ?! ⁉ → single symbol
+      text = text.replace(/！！/g, '！');
+      text = text.replace(/？？/g, '？');
+      text = text.replace(/！？/g, '？');
+      text = text.replace(/？！/g, '？');
+      text = text.replace(/⁉/g, '？');
+      text = text.replace(/!!/g, '！');
+      text = text.replace(/\?\?/g, '？');
+      text = text.replace(/!\?/g, '？');
+      text = text.replace(/\?!/g, '？');
+
+      // 4. Half-width ! ? → full-width (in Japanese context, NOT in URLs/hashtags)
+      // Replace standalone only (not inside http:// or @tag)
+      text = text.replace(/(?<![\/\w])!/g, '！');
+      text = text.replace(/(?<![\/\w])\?/g, '？');
+
+      // 5. % → ％ (in non-URL context)
+      text = text.replace(/(?<!\w)%/g, '％');
+
+      // 6. Machine-dependent characters
+      text = text.replace(/♡/g, '♪');
+      text = text.replace(/☆/g, '♪');
+      text = text.replace(/★/g, '♪');
+      text = text.replace(/✕/g, '×');
+
+      // 7. Ellipsis
+      text = text.replace(/・{2,}/g, '…');
+      text = text.replace(/。。。/g, '…');
+      text = text.replace(/\.\.\./g, '…');
+
+      // 8. Parentheses for X/Instagram accounts: （@... → (@...
+      text = text.replace(/（(@[^\）]+)）/g, '($1)');
+
+      // 9. Double quotes (curly)
+      text = text.replace(/"/g, '\u201c').replace(/"/g, '\u201d');
+      text = text.replace(/"([^"]+)"/g, '\u201c$1\u201d');
+
+      // 10. Numbered list formatting: 「1、」「・①」→「1. 」
+      text = text.replace(/^([１-９1-9])、\s*/gm, '$1. ');
+      // ①②... → 1. 2. ...
+      const circledNums = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+      circledNums.forEach((c, i) => {
+        text = text.replace(new RegExp('^' + c + '\\s*', 'gm'), (i + 1) + '. ');
+      });
+
+      // 11. か所・か月 (箇所→か所, ヶ所→か所 etc.)
+      text = text.replace(/箇所/g, 'か所');
+      text = text.replace(/ヶ所/g, 'か所');
+      text = text.replace(/箇月/g, 'か月');
+      text = text.replace(/ヶ月/g, 'か月');
+
+      // サブストリング重複によるエラーを防ぐもの
+      text = text.replace(/ブロッコリ(?!ー)/g, 'ブロッコリー');
+      text = text.replace(/カリフラワ(?!ー)/g, 'カリフラワー');
+      text = text.replace(/アスパラ(?!ガス)/g, 'アスパラガス');
+
+      // ミリをmmに変換（数字の直後）
+      text = text.replace(/(\d+)ミリ/g, '$1mm');
+
+      // ２桁以上の「度」を「℃」に変換（170度→170℃）
+      text = text.replace(/(\d{2,})度/g, '$1℃');
+
+      // 「時」の変換（時間などの熟語や、名詞の一部を除外。動詞や形容詞、助詞に続く場合を「とき」とする）
+      text = text.replace(/([たるのだいなて])時(?![間計刻期代表点])/g, '$1とき');
+
+      // 12. Word-level replacements
+      // Format: [from, to] - longer patterns first to avoid conflicts
+      const wordPairs = [
+        // ---- 食材名 ----
+        ['鶏ガラスープ', '鶏がらスープ'],
+        ['鶏ガラ', '鶏がら'],
+        ['チーズダッカルビ', 'チーズタッカルビ'],
+        ['チンジャオロース', 'チンジャオロースー'],
+        ['えびちり', 'エビチリ'],
+        ['えびチリ', 'エビチリ'],
+        ['絹豆腐', '絹ごし豆腐'],
+        ['ギョウザ', '餃子'],
+        ['ギョーザ', '餃子'],
+        ['ぎょうざ', '餃子'],
+        ['胡椒', 'こしょう'],
+        ['コショウ', 'こしょう'],
+        ['さば味噌煮缶', 'さばみそ煮缶'],
+        ['サンドウィッチ', 'サンドイッチ'],
+        ['醤油', 'しょうゆ'],
+        ['しょう油', 'しょうゆ'],
+        ['タレ', 'たれ'],
+        ['鶏ムネ肉', '鶏むね肉'],
+        ['鶏胸肉', '鶏むね肉'],
+        ['長ネギ', '長ねぎ'],
+        ['ながねぎ', '長ねぎ'],
+        ['蜂蜜', 'はちみつ'],
+        ['ハチミツ', 'はちみつ'],
+        ['冷麦', '冷や麦'],
+        ['ひやむぎ', '冷や麦'],
+        ['本だし', 'ほんだし'],
+        ['プチトマト', 'ミニトマト'],
+        ['椎茸', 'しいたけ'],
+        ['お米', '米'],
+        ['ネギ', 'ねぎ'],
+        ['海老', 'えび'],
+        ['エビ', 'えび'],
+        ['旨味調味料', 'うま味調味料'],
+        ['うまみ調味料', 'うま味調味料'],
+        ['旨み調味料', 'うま味調味料'],
+        ['炒りごま', 'いりごま'],
+        ['煎りごま', 'いりごま'],
+        ['青海苔', '青のり'],
+        ['大葉', '青じそ'],    // ※要備考欄
+        ['さつま芋', 'さつまいも'],
+        ['サツマイモ', 'さつまいも'],
+        ['かつお節', 'かつおぶし'],
+        ['胡桃', 'くるみ'],
+        ['青梗菜', 'チンゲンサイ'],
+        ['たまご', '卵'],
+        ['玉子', '卵'],
+        ['生姜', 'しょうが'],
+        ['ショウガ', 'しょうが'],
+        ['万能ねぎ', '小ねぎ'],
+        ['細ねぎ', '小ねぎ'],
+        ['スナップえんどう', 'スナップエンドウ'],
+        ['榎', 'えのき'],
+        ['エノキ', 'えのき'],
+        ['シメジ', 'しめじ'],
+        ['えりんぎ', 'エリンギ'],
+        ['キノコ', 'きのこ'],
+        ['茸', 'きのこ'],
+        ['なすび', 'なす'],
+        ['胡瓜', 'きゅうり'],
+        ['キュウリ', 'きゅうり'],
+        ['人参', 'にんじん'],
+        ['ニンジン', 'にんじん'],
+        ['たまねぎ', '玉ねぎ'],
+        ['タマネギ', '玉ねぎ'],
+        ['ニラ', 'にら'],
+        ['ホウレン草', 'ほうれん草'],
+        ['ほうれんそう', 'ほうれん草'],
+        ['コマツナ', '小松菜'],
+        ['南瓜', 'かぼちゃ'],
+        ['カボチャ', 'かぼちゃ'],
+        ['ジャガイモ', 'じゃがいも'],
+        ['馬鈴薯', 'じゃがいも'],
+        ['レンコン', 'れんこん'],
+        ['ゴボウ', 'ごぼう'],
+        ['モヤシ', 'もやし'],
+        ['トウミョウ', '豆苗'],
+        ['ソラマメ', 'そら豆'],
+        ['インゲン', 'いんげん'],
+        ['いんげん豆', 'いんげん'],
+        ['枝まめ', '枝豆'],
+        ['トウモロコシ', 'とうもろこし'],
+        ['とうきび', 'とうもろこし'],
+        ['ニンニク', 'にんにく'],
+        ['おくら', 'オクラ'],
+        ['チュモッパッ', 'チュモッパ'],
+        ['ご飯', 'ごはん'],
+
+        // ---- 动词・表現 ----
+        ['出来上がり', 'できあがり'],
+        ['出来上がる', 'できあがる'],
+        ['出来る', 'できる'],
+        ['気を付ける', '気をつける'],
+        ['揉み込む', 'もみ込む'],
+        ['左右に振る', '左右にふる'],
+        ['中火で熱し', '中火に熱し'],
+        ['水気をきる', '水気を切る'],
+        ['皮をむき', '皮をむいて'],
+        ['素材の良さ', '素材のよさ'],
+        ['粗熱を取る', '粗熱をさます'],
+        ['お腹が空く', 'お腹がすく'],
+        ['味を調える', '味を整える'],
+        ['作りおき', '作り置き'],
+        ['つくりおき', '作り置き'],
+        ['つくり置き', '作り置き'],
+        ['つくる', '作る'],
+        ['造る', '作る'],
+        ['創る', '作る'],
+        ['茹でる', 'ゆでる'],
+        ['絡める', 'からめる'],
+        ['挟む', 'はさむ'],
+        ['揉む', 'もむ'],
+        ['千切り', 'せん切り'],
+        ['千切る', 'ちぎる'],
+        ['噛む', 'かむ'],
+        ['剥く', 'むく'],
+        ['剥いだ', 'はいだ'],
+        ['潰す', 'つぶす'],
+        ['揃える', 'そろえる'],
+        ['乗せる', 'のせる'],
+        ['乗せて', 'のせて'],
+        ['載せる', 'のせる'],
+        ['染みる', 'しみる'],
+        ['振る', 'ふる'],
+        ['済ませる', 'すませる'],
+        ['ほお張る', 'ほおばる'],
+        ['頬張る', 'ほおばる'],
+        ['湯煎', '湯せん'],
+        ['湯剥き', '湯むき'],
+        ['焼肉', '焼き肉'],
+        ['茹で', 'ゆで'],
+        ['いれ', '入れ'],
+        ['粗挽き黒こしょう', '粗びき黒こしょう'],
+        ['ゆずこしょう', '柚子こしょう'],
+        ['味噌', 'みそ'],           // みそはひらがな
+        ['すりゴマ', 'すりごま'],   // ごまはひらがな（長いパターンを先に）
+        ['ゴマ和え', 'ごま和え'],
+        ['ゴマ', 'ごま'],
+        ['泡だて器', '泡立て器'],
+        ['混ぜあわせる', '混ぜ合わせる'],
+        ['うつす', '移す'],
+        ['さして', '刺して'],
+        ['常温にもどす', '室温に戻す'],
+        ['生地をいれる', '生地を流し入れる'],
+        ['粉をいれる', '粉類を加える'],
+        ['焼き上がる', '焼き上がり'],
+        ['していきます', 'します'],
+        ['さく', '割く'],
+        ['掛け合わせる', 'かけあわせる'],
+        ['切れ込み', '切り込み'],
+        ['進む', 'すすむ'],
+        ['乗ってる', 'のってる'],
+        ['しあげる', '仕上げる'],
+        ['もみこんで', 'もみ込んで'],
+
+        // ---- 形容詞・副詞 ----
+        ['美味しい', 'おいしい'],
+        ['美味しく', 'おいしく'],
+        ['可愛い', 'かわいい'],
+        ['綺麗', 'きれい'],
+        ['嬉しい', 'うれしい'],
+        ['素晴らしい', 'すばらしい'],
+        ['爽やか', 'さわやか'],
+        ['サワヤカ', 'さわやか'],
+        ['瑞々しい', 'みずみずしい'],
+        ['滑らか', 'なめらか'],
+        ['柔らかい', 'やわらかい'],
+        ['甘じょっぱい', '甘しょっぱい'],
+        ['甘ずっぱい', '甘酸っぱい'],
+        ['利いた', 'きいた'],
+        ['効いた', 'きいた'],
+        ['すきな', '好きな'],
+
+        // ---- 副詞・接続詞 ----
+        ['早速', 'さっそく'],
+        ['更に', 'さらに'],
+        ['実は', 'じつは'],
+        ['是非', 'ぜひ'],
+        ['沢山', 'たくさん'],
+        ['予め', 'あらかじめ'],
+        ['色々', 'いろいろ'],
+
+        // ---- 名詞 ----
+        ['無し', 'なし'],
+        ['お家', 'おうち'],
+        ['お勧め', 'おすすめ'],
+        ['お薦め', 'おすすめ'],
+        ['オススメ', 'おすすめ'],
+        ['お馴染み', 'おなじみ'],
+        ['お洒落', 'おしゃれ'],
+        ['オシャレ', 'おしゃれ'],
+        ['ご馳走', 'ごちそう'],
+        ['子供', '子ども'],
+        ['お子様', 'お子さん'],
+        ['頂く', 'いただく'],
+        ['戴く', 'いただく'],
+        ['致す', 'いたす'],
+        ['下さい', 'ください'],
+        ['等', 'など'],
+        ['馴染む', 'なじむ'],
+        ['匂い', 'におい'],
+        ['臭い', 'におい'],
+        ['ニオイ', 'におい'],
+        ['蛇腹', 'じゃばら'],
+        ['丸ごと', 'まるごと'],
+        ['まっただ中', '真っただ中'],
+        ['真っ只中', '真っただ中'],
+        ['真っ直中', '真っただ中'],
+        ['病みつき', 'やみつき'],
+        ['ヤミツキ', 'やみつき'],
+        ['優しい', 'やさしい'],
+        ['頑張る', 'がんばる'],
+        ['褒める', 'ほめる'],
+        ['溢れる', 'あふれる'],
+        ['あまった', '余った'],
+        ['あまる', '余った'],
+        ['捏ねる', 'こねる'],
+        ['ラインナップ', 'ラインアップ'],
+        ['パパっと', 'パパッと'],
+        ['ぱぱっと', 'パパッと'],
+        ['ピッタリ', 'ぴったり'],
+        ['ワタ', 'わた'],
+        ['インスタグラム', 'Instagram'],
+        ['味つけ', '味付け'],
+        ['フォロワー数', 'フォロワー'],
+        ['人超え', '人超'],
+        ['いろどり', '彩り'],
+        ['彩', '彩り'],
+        ['ススム', 'すすむ'],
+        ['ワット', 'W'],
+        ['タンパク質', 'たんぱく質'],
+        ['おかし', 'お菓子'],
+        ['カンタン', '簡単'],
+        ['ヘラ', 'ゴムベラ'],
+        ['1／2', '1/2'],
+        ['おとも', 'お供'],
+        ['おなか', 'お腹'],
+        ['我が家', 'わが家'],
+        ['〆', '締め'],
+        ['しめ', '締め'],
+        ['丼', 'どんぶり'],
+        ['皆さま', 'みなさま'],
+        ['皆様', 'みなさま'],
+        ['皆さん', 'みなさん'],
+
+        // ---- まぜる/混ぜる (漢字が正しい) ----
+        ['まぜる', '混ぜる'],
+
+        // ---- 助詞 ----
+        ['取り出す時は', '取り出すときは'],
+      ];
+
+      wordPairs.forEach(([from, to]) => {
+        try {
+          text = text.split(from).join(to);
+        } catch (e) { }
+      });
+
+      // 13. 個 (コ → 個 as unit)
+      text = text.replace(/(\d)コ(?=[、。\s\n]|$)/g, '$1個');
+
+      // 14. 箇条書きの末尾句点を削除 (lines starting with ●・※)
+      text = text.replace(/^(●[^\n]+)。$/gm, '$1');
+      text = text.replace(/^(・[^\n]+)。$/gm, '$1');
+      text = text.replace(/^(※[^\n]+)。$/gm, '$1');
+
+      // 15. カッコ内の句点を外に出す
+      text = text.replace(/（([^）]+)。）/g, '（$1）。');
+      text = text.replace(/「([^」]+)。」/g, '「$1」。');
+
+      // 行頭の ● → ・
+      text = text.replace(/^●/gm, '・');
+
+      // 16. 大文字アルファベット+全角文字 → 間にスペース は材料セクションのみ（extractSections内で適用）
+
+      return text;
+    }
+
+    // ============================================================
+    // EXTRACT SECTIONS FROM BLOG TEXT
+    // ============================================================
+    function extractSections(text, title) {
+      const result = {
+        name: '',
+        servings: '',
+        intro: '',
+        ingredients: '',
+        steps: '',
+        onepoint: '',
+        free: ''
+      };
+
+      result.name = applyRegulations(title || '');
+
+      // Markers for sections
+      // パターン1: ブラケット付き（＜材料＞など）
+      // パターン2: 行頭に「材料」で始まる行（材料（2人分）なども含む）
+      // パターン3: 行頭に「作り方」で始まる行
+      const matMarkers = [
+        /[＜<【]\s*材料\s*[＞>】]/,
+        /^[ \t]*材料/m              // 「材料」「材料（2人分）」「材料（4人前）」など
+      ];
+      const stepMarkers = [
+        /[＜<【]\s*作り方\s*[＞>】]/,
+        /^[ \t]*作り方/m            // 「作り方」「作り方（下準備あり）」など
+      ];
+
+      let matIdx = -1;
+      let stepIdx = -1;
+      let matLabel = '';
+      let stepLabel = '';
+
+      // 最後に出現したマーカーを使う（ブログ前半の言及を無視するため）
+      function lastMatch(re, str) {
+        const gre = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+        let m, last = null;
+        while ((m = gre.exec(str)) !== null) last = m;
+        return last;
+      }
+
+      // Find LAST occurrence of each marker
+      for (const re of matMarkers) {
+        const m = lastMatch(re, text);
+        if (m && (matIdx === -1 || m.index > matIdx)) {
+          matIdx = m.index;
+          matLabel = m[0];
+        }
+      }
+      for (const re of stepMarkers) {
+        const m = lastMatch(re, text);
+        if (m && (stepIdx === -1 || m.index > stepIdx)) {
+          stepIdx = m.index;
+          stepLabel = m[0];
+        }
+      }
+
+      if (matIdx === -1 && stepIdx === -1) {
+        // Can't detect structure, put everything in intro
+        result.intro = applyRegulations(text.trim());
+        return result;
+      }
+
+      // INTRO: everything before first marker
+      const firstMarker = Math.min(
+        matIdx > -1 ? matIdx : Infinity,
+        stepIdx > -1 ? stepIdx : Infinity
+      );
+      result.intro = applyRegulations(text.slice(0, firstMarker).trim());
+
+      // INGREDIENTS section
+      if (matIdx > -1) {
+        const matStart = matIdx + (matLabel ? matLabel.length : 0);
+        const matEnd = stepIdx > matIdx ? stepIdx : text.length;
+        let matText = text.slice(matStart, matEnd).trim();
+
+        // Extract servings from header (e.g. "2人分" or "4人前")
+        const servMatch = matText.match(/^[（(]?(\d+[～〜\-]?\d*\s*[人名個杯合]分?[前]?)[）)]?/);
+        if (servMatch) {
+          result.servings = applyRegulations(servMatch[1]);
+          matText = matText.slice(servMatch[0].length).trim();
+        } else {
+          // Check in the remaining text
+          const s2 = matText.match(/(\d+[～〜\-]?\d*\s*[人名個杯合]分?[前]?)/);
+          if (s2) result.servings = applyRegulations(s2[1]);
+        }
+
+        // 材料のみ: 大文字アルファベット+全角文字 → 間にスペース（A水 → A 水）
+        let ingredients = applyRegulations(matText);
+        ingredients = ingredients.replace(/([A-Z])([ぁ-んァ-ン一-龥])/g, '$1 $2');
+        result.ingredients = ingredients;
+      }
+
+      // STEPS section
+      if (stepIdx > -1) {
+        const stepStart = stepIdx;  // ＜作り方＞ ラベルごと含める
+        let stepsText = text.slice(stepStart).trim();
+
+        // Look for Q&A or tips after steps
+        const qaMatch = stepsText.search(/Q[．.、]|Q&A|ポイント|アドバイス|コツ|注意|メモ|Tips/i);
+        if (qaMatch > -1) {
+          result.steps = applyRegulations(stepsText.slice(0, qaMatch).trim());
+          const remainder = stepsText.slice(qaMatch).trim();
+          // Split Q&A from other content
+          const freeMatch = remainder.search(/\n\n\n/);
+          if (freeMatch > -1) {
+            result.onepoint = applyRegulations(remainder.slice(0, freeMatch).trim());
+            result.free = applyRegulations(remainder.slice(freeMatch).trim());
+          } else {
+            result.onepoint = applyRegulations(remainder);
+          }
+        } else {
+          result.steps = applyRegulations(stepsText);
+        }
+      }
+
+      return result;
+    }
+
+    // ============================================================
+    // FETCH AND PARSE BLOG
+    // ============================================================
+    async function fetchBlog() {
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url) { showToast('URLを入力してください', 'error'); return; }
+
+      setStatus('取得中...', true);
+      setFetchBtn(false);
+
+      const proxies = [
+        { name: 'CORSProxy.io', getUrl: (u) => 'https://corsproxy.io/?' + u, parse: (res) => res.text() },
+        { name: 'CodeTabs', getUrl: (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, parse: (res) => res.text() },
+        { name: 'AllOrigins', getUrl: (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, parse: (res) => res.text() }
+      ];
+
+      let lastError = null;
+      let success = false;
+
+      for (const proxy of proxies) {
+        try {
+          setStatus(`${proxy.name} を試行中...`, true);
+
+          // Timeout controller
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+          const res = await fetch(proxy.getUrl(url), { signal: controller.signal }).catch(err => {
+            if (err.name === 'AbortError') throw new Error('タイムアウト');
+            throw err;
+          });
+          clearTimeout(timeoutId);
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+          const html = await proxy.parse(res);
+          if (!html || html.length < 200) throw new Error('内容が不十分です');
+
+          // Check if it's a block page
+          if (html.includes('Access Denied') || html.includes('アクセス制限') || html.includes('机器人')) {
+            throw new Error('プロキシがブロックされました');
+          }
+
+          setStatus('解析中...', true);
+          parseBlogHtml(html, url);
+          success = true;
+          break;
+        } catch (e) {
+          console.warn(`${proxy.name} 失敗:`, e);
+          lastError = e;
+          setStatus(`${proxy.name} 失敗 (${e.message})。次を試します...`, true);
+          await new Promise(r => setTimeout(r, 500)); // Short delay
+        }
+      }
+
+      if (!success) {
+        setStatus('取得に失敗しました。プロキシが制限されている可能性があります。', false);
+        showToast('最終エラー: ' + (lastError ? lastError.message : '取得不能'), 'error');
+      }
+
+      setFetchBtn(true);
+    }
+
+    function parseBlogHtml(html, sourceUrl) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // Extract title
+      let title = '';
+      const titleSelectors = [
+        '.skin-entryTitle',
+        '.js-entryTitle',
+        'h2[class*="title"]',
+        'h1[class*="title"]',
+        'title'
+      ];
+      for (const sel of titleSelectors) {
+        const el = doc.querySelector(sel);
+        if (el) { title = el.innerText || el.textContent || ''; title = title.trim(); break; }
+      }
+      // Fallback: parse <title>
+      if (!title) {
+        const t = doc.querySelector('title');
+        if (t) title = t.textContent.split('|')[0].split('-')[0].trim();
+      }
+
+      // Extract article body
+      let bodyEl = null;
+      const bodySelectors = [
+        '.js-entryBody',
+        '.skin-entryBody',
+        '.p-article-body',
+        '[class*="entryBody"]',
+        '.entry-body',
+        'article',
+      ];
+      for (const sel of bodySelectors) {
+        bodyEl = doc.querySelector(sel);
+        if (bodyEl) break;
+      }
+
+      // Try Next.js data (Ameba uses this)
+      let bodyText = '';
+
+      const nextScript = doc.querySelector('#__NEXT_DATA__');
+      if (nextScript) {
+        try {
+          const data = JSON.parse(nextScript.textContent);
+          // Traverse to find entry content
+          const entryContent = findDeep(data, 'description') ||
+            findDeep(data, 'content') ||
+            findDeep(data, 'summary');
+          if (entryContent && entryContent.length > 100) {
+            const div = document.createElement('div');
+            div.innerHTML = entryContent;
+            bodyText = div.innerText || div.textContent || '';
+          }
+        } catch (e) { }
+      }
+
+      // Fallback: use DOM body element for text only (images via raw HTML)
+      if (!bodyText && bodyEl) {
+        bodyText = bodyEl.innerText || bodyEl.textContent || '';
+      }
+
+      // Save raw state for re-extraction
+      _rawBodyText = bodyText;
+      _rawTitle = title;
+      _rawHtml = html;  // 画像フィルタリング用
+
+      // Show original
+      document.getElementById('originalText').textContent = bodyText;
+
+      // Show range bar so user can set start/end markers
+      document.getElementById('rangeBar').style.display = '';
+
+      // Apply markers and extract structure
+      const ranged = applyRange(bodyText);
+      const sections = extractSections(ranged, title);
+
+      // Populate columns
+      setCol('name', sections.name);
+      setCol('servings', sections.servings);
+      setCol('intro', sections.intro);
+      setCol('ingredients', sections.ingredients);
+      setCol('steps', sections.steps);
+      setCol('onepoint', sections.onepoint);
+      setCol('free', sections.free);
+
+      // Show all cards
+      showCards();
+
+      // Show images — マーカー範囲でフィルタリング
+      const images = extractImagesFromHtml(html);
+      renderImages(images);
+
+      setStatus(`✅ 取得完了 — タイトル: ${title || '（不明）'} / 画像: ${images.length}枚`, false);
+    }
+
+    function getBestImgSrc(img) {
+      return img.getAttribute('data-original') ||
+        img.getAttribute('data-src') ||
+        img.getAttribute('data-lazy-src') ||
+        img.src || '';
+    }
+
+    // Deep search in object for a key
+    function findDeep(obj, key) {
+      if (!obj || typeof obj !== 'object') return null;
+      if (obj[key]) return obj[key];
+      for (const k of Object.keys(obj)) {
+        const found = findDeep(obj[k], key);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function findAllDeep(obj, key, results, depth = 0) {
+      if (depth > 20 || !obj || typeof obj !== 'object') return;
+      if (obj[key]) results.push(obj[key]);
+      for (const k of Object.keys(obj)) {
+        findAllDeep(obj[k], key, results, depth + 1);
+      }
+    }
+
+    // ============================================================
+    // UI HELPERS
+    // ============================================================
+    function autoResize(el) {
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+
+    function setCol(id, value) {
+      const el = document.getElementById('col-' + id);
+      if (!el) return;
+      el.value = value || '';
+      autoResize(el);
+    }
+
+    function showCards() {
+      document.getElementById('emptyState').style.display = 'none';
+      // リード文カード(card-lead)はACFフィールド未確認のため表示しない
+      const ids = ['name', 'servings', 'intro', 'ingredients', 'steps', 'onepoint', 'free', 'cooking-time', 'expiration-date'];
+      ids.forEach(id => {
+        const card = document.getElementById('card-' + id);
+        if (card) card.style.display = '';
+      });
+      // display:none 解除後に正しい scrollHeight で再計算
+      requestAnimationFrame(() => {
+        ids.forEach(id => autoResize(document.getElementById('col-' + id)));
+      });
+    }
+
+    function copyCol(id) {
+      const el = document.getElementById('col-' + id);
+      if (!el) return;
+      const text = el.value;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = el.closest('.col-card').querySelector('.copy-btn');
+        if (btn) {
+          btn.classList.add('copied');
+          btn.textContent = '✅ コピー済み';
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.textContent = '📋 コピー';
+          }, 1500);
+        }
+        showToast('コピーしました！', 'success');
+      }).catch(() => {
+        // Fallback
+        el.select();
+        document.execCommand('copy');
+        showToast('コピーしました！', 'success');
+      });
+    }
+
+    function renderImages(images) {
+      const panel = document.getElementById('imagesPanel');
+      const grid = document.getElementById('imageGrid');
+      const count = document.getElementById('imgCount');
+
+      // アップロード用にグローバル配列を更新
+      _imageUrls = images.slice();
+      document.getElementById('wpImgBadge').textContent = images.length + '枚';
+
+      panel.style.display = '';
+      count.textContent = images.length + '枚';
+      grid.innerHTML = '';
+
+      images.forEach((url, i) => {
+        const item = document.createElement('div');
+        item.className = 'img-item';
+        item.title = 'クリックでダウンロード';
+        item.innerHTML = `
+          <img src="${escHtml(url)}" alt="工程写真 ${i + 1}" loading="lazy"
+               onerror="this.parentElement.style.display='none'">
+          <div class="img-num">${i + 1}</div>
+          <div class="copy-url-btn">⬇ クリックでDL</div>
+        `;
+        item.addEventListener('click', () => downloadImg(url, i + 1));
+        grid.appendChild(item);
+      });
+    }
+
+    const DOWNLOAD_WIDTH = 640; // リサイズ後の横幅 (px)
+
+    // Canvasを用いて画像をリサイズ＆圧縮（JPEG化、最大幅640px、100KB目標）
+    async function resizeImageBlob(blob) {
+      return new Promise((resolve, reject) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          const targetW = img.naturalWidth >= 300 ? DOWNLOAD_WIDTH : img.naturalWidth;
+          const scale = targetW / img.naturalWidth;
+          const height = Math.round(img.naturalHeight * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, targetW, height);
+
+          // 100KB以下になるまで品質を調整（0.85から0.05刻みで下げる、最低0.5）
+          let quality = 0.85;
+          const getResized = (q) => {
+            canvas.toBlob(b => {
+              if (b && b.size > 100 * 1024 && q > 0.5) {
+                getResized(q - 0.05);
+              } else if (b) {
+                resolve(b);
+              } else {
+                reject(new Error('変換失敗'));
+              }
+            }, 'image/jpeg', q);
+          };
+          getResized(quality);
+        };
+        img.onerror = () => reject(new Error('解析失敗'));
+        img.src = blobUrl;
+      }).finally(() => {
+        // Blob URLを解放してメモリリークを防ぐ
+        // ※Promiseが解決・拒否された後に必ず呼ばれる（ただしURL.createObjectURLで作成したURLは即時破棄してはいけないため、ここで解放）
+      }); // wait, finally() is fine but we need to pass the result.
+    }
+
+    async function downloadImg(url, num) {
+      const proxies = [
+        { name: 'AllOrigins', getUrl: (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+        { name: 'CodeTabs', getUrl: (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
+        { name: 'CORSProxy.io', getUrl: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u) }
+      ];
+
+      let lastError = null;
+      let success = false;
+
+      for (const proxy of proxies) {
+        try {
+          showToast(`画像${num}: ${proxy.name}で試行中…`, '');
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+          const res = await fetch(proxy.getUrl(url), { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+
+          if (blob.size < 1000) throw new Error('データが不正です');
+
+          // 2. Canvasで640px幅にリサイズ・圧縮
+          const resizedBlob = await resizeImageBlob(blob);
+
+          // 3. ダウンロード
+          const origName = url.split('/').pop().split('?')[0].replace(/\.\w+$/, '');
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(resizedBlob);
+          a.download = origName + '.jpg';
+          a.click();
+          URL.revokeObjectURL(a.href);
+
+          showToast(`画像${num}をDLしました (${proxy.name}) ✅`, 'success');
+          success = true;
+          break;
+        } catch (e) {
+          console.warn(`画像${num} ${proxy.name}失敗:`, e);
+          lastError = e;
+          // Continue to next proxy
+        }
+      }
+
+      if (!success) {
+        showToast(`画像${num}のDLに失敗: ` + (lastError ? lastError.message : '取得不能'), 'error');
+      }
+    }
+
+    let imagesOpen = true;
+    function toggleImages() {
+      imagesOpen = !imagesOpen;
+      document.getElementById('imageGrid').style.display = imagesOpen ? '' : 'none';
+      document.getElementById('toggleArrow').classList.toggle('open', imagesOpen);
+    }
+
+    function setStatus(msg, loading) {
+      document.getElementById('statusText').textContent = msg;
+      document.getElementById('spinner').classList.toggle('show', !!loading);
+    }
+
+    function setFetchBtn(enabled) {
+      document.getElementById('fetchBtn').disabled = !enabled;
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    let toastTimer;
+    function showToast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show ' + type;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function clearAll() {
+      document.getElementById('urlInput').value = '';
+      document.getElementById('originalText').textContent = '';
+      document.getElementById('emptyState').style.display = '';
+      document.getElementById('imagesPanel').style.display = 'none';
+      document.getElementById('imageGrid').innerHTML = '';
+      document.getElementById('rangeBar').style.display = 'none';
+      document.getElementById('startMarker').value = '';
+      document.getElementById('endMarker').value = '';
+      document.getElementById('imgStartMarker').value = '';
+      _rawBodyText = '';
+      _rawTitle = '';
+      _imageUrls = [];
+      document.getElementById('wpImgBadge').textContent = '0枚';
+      // lead カードはACFフィールド未確認のため対象から除外
+      const ids = ['name', 'servings', 'intro', 'ingredients', 'steps', 'onepoint', 'free', 'cooking-time', 'expiration-date'];
+      ids.forEach(id => {
+        setCol(id, '');
+        const card = document.getElementById('card-' + id);
+        if (card) card.style.display = 'none';
+      });
+      setStatus('URLを入力して「取得」ボタンを押してください', false);
+    }
+
+    // Enter key on URL input
+    document.getElementById('urlInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') fetchBlog();
+    });
+
+    function onOriginalTextInput() {
+      const text = document.getElementById('originalText').innerText;
+      if (text.length > 10) {
+        _rawBodyText = text;
+        document.getElementById('rangeBar').style.display = '';
+        // Note: Title remains as is or empty if from manual paste
+        reExtract();
+      }
+    }
+
+    // Auto-resize all textareas on user input
+    document.querySelectorAll('.col-textarea').forEach(ta => {
+      ta.addEventListener('input', () => autoResize(ta));
+    });
+
+    // Resize panels
+    (function initResize() {
+      document.getElementById('toggleArrow').classList.add('open');
+    })();
+  </script>
+</body>
+
+</html>
