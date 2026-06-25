@@ -1303,6 +1303,8 @@
     // ============================================================
     async function uploadImageToWp(imageUrl, credentials, index) {
       const proxies = [
+        { name: 'Direct',      getUrl: u => u },
+        { name: 'wsrv.nl',     getUrl: u => `https://wsrv.nl/?url=${encodeURIComponent(u.replace(/^https?:\/\//, ''))}` },
         { name: 'AllOrigins',  getUrl: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
         { name: 'CodeTabs',    getUrl: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
         { name: 'CORSProxy',   getUrl: u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
@@ -1378,6 +1380,8 @@
 
       // 1. Blob取得
       const proxies = [
+        { name: 'Direct',      getUrl: u => u },
+        { name: 'wsrv.nl',     getUrl: u => `https://wsrv.nl/?url=${encodeURIComponent(u.replace(/^https?:\/\//, ''))}` },
         { name: 'AllOrigins',  getUrl: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
         { name: 'CodeTabs',    getUrl: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
         { name: 'CORSProxy',   getUrl: u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
@@ -2084,9 +2088,11 @@ Headers:
       setFetchBtn(false);
 
       const proxies = [
-        { name: 'CORSProxy.io', getUrl: (u) => 'https://corsproxy.io/?' + u, parse: (res) => res.text() },
+        { name: 'cors.eu.org', getUrl: (u) => `https://cors.eu.org/${u}`, parse: (res) => res.text() },
+        { name: 'AllOrigins(get)', getUrl: (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`, parse: async (res) => (await res.json()).contents },
+        { name: 'CORSProxy.io', getUrl: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u), parse: (res) => res.text() },
         { name: 'CodeTabs', getUrl: (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, parse: (res) => res.text() },
-        { name: 'AllOrigins', getUrl: (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, parse: (res) => res.text() }
+        { name: 'AllOrigins(raw)', getUrl: (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, parse: (res) => res.text() }
       ];
 
       let lastError = null;
