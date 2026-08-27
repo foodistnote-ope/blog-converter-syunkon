@@ -476,6 +476,35 @@
       opacity: 1;
     }
 
+    .img-item .delete-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(239, 68, 68, .9);
+      color: #fff;
+      border: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity .15s, transform .15s;
+    }
+
+    .img-item:hover .delete-btn {
+      opacity: 1;
+    }
+
+    .img-item .delete-btn:hover {
+      transform: scale(1.15);
+      background: rgba(239, 68, 68, 1);
+    }
+
     .img-item.copied-img {
       border-color: var(--green);
     }
@@ -957,17 +986,6 @@
         <textarea class="col-textarea" id="col-name" placeholder="レシピ名を入力" rows="2"></textarea>
       </div>
 
-      <!-- Servings -->
-      <div class="col-card" id="card-servings" style="display:none">
-        <div class="col-header">
-          <div class="col-label">分量</div>
-          <div class="col-actions">
-            <button class="copy-btn" onclick="copyCol('servings')">📋 コピー</button>
-          </div>
-        </div>
-        <textarea class="col-textarea" id="col-servings" placeholder="例: 2人分" rows="1"></textarea>
-      </div>
-
       <!-- Intro -->
       <div class="col-card" id="card-intro" style="display:none">
         <div class="col-header">
@@ -977,6 +995,17 @@
           </div>
         </div>
         <textarea class="col-textarea tall" id="col-intro" placeholder="レシピ紹介文"></textarea>
+      </div>
+
+      <!-- Servings -->
+      <div class="col-card" id="card-servings" style="display:none">
+        <div class="col-header">
+          <div class="col-label">分量</div>
+          <div class="col-actions">
+            <button class="copy-btn" onclick="copyCol('servings')">📋 コピー</button>
+          </div>
+        </div>
+        <textarea class="col-textarea" id="col-servings" placeholder="例: 2人分" rows="1"></textarea>
       </div>
 
       <!-- Ingredients -->
@@ -1143,16 +1172,12 @@
       // --- 認証ヘッダー生成 ---
       const credentials = btoa(username + ':' + appPw);
 
-      // --- 作り方: 繰り返しフィールド（1行=1工程、空行除外、先頭番号除去）---
-      // 先頭番号の除去パターン: 「1. 」「。1.」「。1」「【１】」「（1）」「(1) 」「①②...」
-      const STEP_NUM_RE = /^(?:【\d+】|（\d+）|\(\d+\)|[\u2460-\u2473]|\d+[..。\s])[\s　]*/;
-      const stripStepNum = line => line.replace(STEP_NUM_RE, '').trim();
-
+      // --- 作り方: 繰り返しフィールド（1行=1工程、空行除外）---
       const stepsArray = stepsRaw
         ? stepsRaw.split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0)
-            .map(line => ({ recipe_explanation: stripStepNum(line) }))
+            .map(line => ({ recipe_explanation: line }))
         : [];
 
       // --- ACFフィールド構築（未入力は除外）---
@@ -1480,10 +1505,9 @@ Headers:
         return;
       }
 
-      const STEP_NUM_RE_P = /^(?:【\d+】|（\d+）|\(\d+\)|[\u2460-\u2473]|\d+[..。\s])[\s　]*/;
       const stepsArray = stepsRaw
         ? stepsRaw.split('\n').map(l => l.trim()).filter(l => l)
-            .map(l => ({ recipe_explanation: l.replace(STEP_NUM_RE_P, '').trim() }))
+            .map(l => ({ recipe_explanation: l }))
         : [];
 
       const acfData = {};
@@ -1812,6 +1836,7 @@ Headers:
         ['茹で', 'ゆで'],
         ['いれ', '入れ'],
         ['粗挽き黒こしょう', '粗びき黒こしょう'],
+        ['粗引き', '粗びき'],
         ['ゆずこしょう', '柚子こしょう'],
         ['味噌', 'みそ'],           // みそはひらがな
         ['すりゴマ', 'すりごま'],   // ごまはひらがな（長いパターンを先に）
@@ -2048,6 +2073,8 @@ Headers:
         // 材料のみ: 大文字アルファベット+全角文字 → 間にスペース（A水 → A 水）
         let ingredients = applyRegulations(matText);
         ingredients = ingredients.replace(/([A-Z])([ぁ-んァ-ン一-龥])/g, '$1 $2');
+        // 行頭の「A 砂糖」等に「・」をつける
+        ingredients = ingredients.replace(/^[ \t]*([A-Z])\s/gm, '・$1 ');
         result.ingredients = ingredients;
       }
 
@@ -2338,11 +2365,18 @@ Headers:
           <img src="${escHtml(url)}" alt="工程写真 ${i + 1}" loading="lazy"
                onerror="this.parentElement.style.display='none'">
           <div class="img-num">${i + 1}</div>
+          <button class="delete-btn" title="送信対象から除外" onclick="removeImage(${i}, event)">✕</button>
           <div class="copy-url-btn">⬇ クリックでDL</div>
         `;
         item.addEventListener('click', () => downloadImg(url, i + 1));
         grid.appendChild(item);
       });
+    }
+
+    function removeImage(index, event) {
+      event.stopPropagation();
+      _imageUrls.splice(index, 1);
+      renderImages(_imageUrls);
     }
 
     const DOWNLOAD_WIDTH = 640; // リサイズ後の横幅 (px)
