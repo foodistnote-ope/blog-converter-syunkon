@@ -2114,7 +2114,12 @@ Headers:
       setFetchBtn(false);
 
       const proxies = [
-        { name: 'Jina Reader', getUrl: (u) => `https://r.jina.ai/${u}`, parse: (res) => res.text(), handle: parseJinaText },
+        {
+          name: 'Jina Reader', getUrl: (u) => `https://r.jina.ai/${u}`, parse: (res) => res.text(), handle: parseJinaText,
+          // 本文セレクタで範囲を絞る。指定しないとJSで後から差し込まれる
+          // サイドバー（フォロワー数・テーマ一覧等）まで本文として拾ってしまうため。
+          headers: { 'X-Target-Selector': '.js-entryBody, .skin-entryBody, .p-article-body, .entry-body, article' }
+        },
         { name: 'cors.eu.org', getUrl: (u) => `https://cors.eu.org/${u}`, parse: (res) => res.text() },
         { name: 'AllOrigins(get)', getUrl: (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`, parse: async (res) => (await res.json()).contents },
         { name: 'CORSProxy.io', getUrl: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u), parse: (res) => res.text() },
@@ -2130,7 +2135,7 @@ Headers:
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
         try {
-          const res = await fetch(proxy.getUrl(url), { signal: controller.signal }).catch(err => {
+          const res = await fetch(proxy.getUrl(url), { signal: controller.signal, headers: proxy.headers || {} }).catch(err => {
             if (err.name === 'AbortError') throw new Error('タイムアウト');
             throw err;
           });
