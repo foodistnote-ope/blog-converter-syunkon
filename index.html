@@ -2115,6 +2115,7 @@ Headers:
       setFetchBtn(false);
 
       const proxies = [
+        { name: 'Jina Reader', getUrl: (u) => `https://r.jina.ai/${u}`, parse: (res) => res.text(), handle: parseJinaText },
         { name: 'cors.eu.org', getUrl: (u) => `https://cors.eu.org/${u}`, parse: (res) => res.text() },
         { name: 'AllOrigins(get)', getUrl: (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`, parse: async (res) => (await res.json()).contents },
         { name: 'CORSProxy.io', getUrl: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u), parse: (res) => res.text() },
@@ -2124,21 +2125,16 @@ Headers:
 
       let lastError = null;
       let success = false;
+      const MAX_ATTEMPTS_PER_PROXY = 2;
 
-      for (const proxy of proxies) {
+      async function attemptOnce(proxy) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         try {
-          setStatus(`${proxy.name} を試行中...`, true);
-
-          // Timeout controller
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
-
           const res = await fetch(proxy.getUrl(url), { signal: controller.signal }).catch(err => {
             if (err.name === 'AbortError') throw new Error('タイムアウト');
             throw err;
           });
-          clearTimeout(timeoutId);
-
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
           const html = await proxy.parse(res);
@@ -2148,22 +2144,37 @@ Headers:
           if (html.includes('Access Denied') || html.includes('アクセス制限') || html.includes('机器人')) {
             throw new Error('プロキシがブロックされました');
           }
+          return html;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
 
-          setStatus('解析中...', true);
-          parseBlogHtml(html, url);
-          success = true;
-          break;
-        } catch (e) {
-          console.warn(`${proxy.name} 失敗:`, e);
-          lastError = e;
-          setStatus(`${proxy.name} 失敗 (${e.message})。次を試します...`, true);
-          await new Promise(r => setTimeout(r, 500)); // Short delay
+      outer:
+      for (const proxy of proxies) {
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_PROXY; attempt++) {
+          try {
+            setStatus(attempt === 1 ? `${proxy.name} を試行中...` : `${proxy.name} を再試行中 (${attempt}/${MAX_ATTEMPTS_PER_PROXY})...`, true);
+
+            const html = await attemptOnce(proxy);
+
+            setStatus('解析中...', true);
+            (proxy.handle || parseBlogHtml)(html, url);
+            success = true;
+            break outer;
+          } catch (e) {
+            console.warn(`${proxy.name} 失敗 (試行${attempt}):`, e);
+            lastError = e;
+            const isLastAttempt = attempt === MAX_ATTEMPTS_PER_PROXY;
+            setStatus(`${proxy.name} 失敗 (${e.message})。${isLastAttempt ? '次を試します...' : '再試行します...'}`, true);
+            await new Promise(r => setTimeout(r, isLastAttempt ? 500 : 1000));
+          }
         }
       }
 
       if (!success) {
-        setStatus('取得に失敗しました。プロキシが制限されている可能性があります。', false);
-        showToast('最終エラー: ' + (lastError ? lastError.message : '取得不能'), 'error');
+        setStatus('取得に失敗しました。ブログ本文をすべてコピーして、左の「元テキスト」欄に貼り付けてください。', false);
+        showToast('プロキシ制限エラー。手動でテキストを貼り付けてください。', 'error');
       }
 
       setFetchBtn(true);
@@ -2231,10 +2242,39 @@ Headers:
         bodyText = bodyEl.innerText || bodyEl.textContent || '';
       }
 
+      applyParsedContent(bodyText, title, html);
+    }
+
+    // Parse the response from the r.jina.ai Reader API (plain markdown, not HTML).
+    // Format: "Title: ...\n\nURL Source: ...\n\nMarkdown Content:\n<body>"
+    function parseJinaText(text, sourceUrl) {
+      let title = '';
+      const titleMatch = text.match(/^Title:\s*(.+)$/m);
+      if (titleMatch) title = titleMatch[1].trim();
+
+      let bodyText = text;
+      const contentIdx = text.indexOf('Markdown Content:');
+      if (contentIdx > -1) {
+        bodyText = text.slice(contentIdx + 'Markdown Content:'.length).trim();
+      }
+      // Strip markdown image/link syntax down to plain text
+      bodyText = bodyText
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/\n{3,}/g, '\n\n\n')
+        .trim();
+
+      // Pass the untouched jina text through for image-URL extraction (regex-based, format-agnostic)
+      applyParsedContent(bodyText, title, text);
+    }
+
+    // Shared tail: takes extracted plain-text body + title, populates the UI.
+    // rawForImages is scanned by extractImagesFromHtml() (a URL regex, works on HTML or markdown alike).
+    function applyParsedContent(bodyText, title, rawForImages) {
       // Save raw state for re-extraction
       _rawBodyText = bodyText;
       _rawTitle = title;
-      _rawHtml = html;  // 画像フィルタリング用
+      _rawHtml = rawForImages;  // 画像フィルタリング用
 
       // Show original
       document.getElementById('originalText').textContent = bodyText;
@@ -2259,7 +2299,7 @@ Headers:
       showCards();
 
       // Show images — マーカー範囲でフィルタリング
-      const images = extractImagesFromHtml(html);
+      const images = extractImagesFromHtml(rawForImages);
       renderImages(images);
 
       setStatus(`✅ 取得完了 — タイトル: ${title || '（不明）'} / 画像: ${images.length}枚`, false);
