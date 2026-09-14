@@ -61,7 +61,45 @@ const testCases = [
   // 追加3: 乗せ系の変換
   { input: "お皿に乗せた。", expected: "お皿にのせた。" },
   { input: "野菜を乗せます。", expected: "野菜をのせます。" },
-  { input: "上に載せる", expected: "上にのせる" }
+  { input: "上に載せる", expected: "上にのせる" },
+
+  // 追加4: 良い、良く、良かったら
+  { input: "良かったら作ってみて下さい。", expected: "よかったら作ってみてください。" },
+  { input: "良い香りがする", expected: "よい香りがする" },
+  { input: "よく炒める", expected: "よく炒める" },
+
+  // 追加5: 「等」の変換
+  { input: "ベーコンは6等分に切る。", expected: "ベーコンは6等分に切る。" },
+  { input: "塩、胡椒等で味を調える。", expected: "塩、こしょうなどで味を整える。" },
+
+  // 追加6: 「茸」の変換
+  { input: "舞茸を炒める。", expected: "舞茸を炒める。" },
+  { input: "松茸ご飯を作る。", expected: "松茸ごはんを作る。" },
+  { input: "お好みの茸を入れる", expected: "お好みのきのこを入れる" },
+
+  // 追加7: 「丼」の変換
+  { input: "牛丼を作りました。", expected: "牛丼を作りました。" },
+  { input: "親子丼が食べたい。", expected: "親子丼が食べたい。" },
+  { input: "カツ丼と天丼", expected: "カツ丼と天丼" },
+  { input: "深めの丼にご飯を盛る", expected: "深めのどんぶりにごはんを盛る" },
+
+  // 追加8: 「榎」の変換
+  { input: "榎をほぐす", expected: "えのきをほぐす" },
+  { input: "榎本さんに教わった", expected: "榎本さんに教わった" },
+
+  // 追加9: 「等」の否定後読み
+  { input: "均等に混ぜる。", expected: "均等に混ぜる。" },
+  { input: "対等な立場で。", expected: "対等な立場で。" },
+  { input: "平等に分ける。", expected: "平等に分ける。" },
+  { input: "同等の量を入れる。", expected: "同等の量を入れる。" },
+  
+  // 追加10: 「茸」のえのきガード
+  { input: "えのき茸を洗う。", expected: "えのき茸を洗う。" },
+  { input: "エノキ茸を洗う。", expected: "えのき茸を洗う。" }, 
+  
+  // 追加11: 「剥がれ」
+  { input: "皮が剥がれる。", expected: "皮がはがれる。" },
+  { input: "焦げが剥がれた。", expected: "焦げがはがれた。" }
 ];
 
 console.log("=== Notation Rules Test ===");
