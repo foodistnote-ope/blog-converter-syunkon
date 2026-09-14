@@ -119,7 +119,21 @@ const testCases = [
   { input: "タレをかける。", expected: "たれをかける。" },
   { input: "エビデンスを示す。", expected: "エビデンスを示す。" },
   { input: "エビアンを飲む", expected: "エビアンを飲む" },
-  { input: "エビフライを作る", expected: "えびフライを作る" }
+  { input: "エビフライを作る", expected: "えびフライを作る" },
+
+  // 追加15: 載せ、実は、おとも のガード
+  { input: "掲載せず", expected: "掲載せず" },
+  { input: "事実は", expected: "事実は" },
+  { input: "実はですね", expected: "じつはですね" },
+  { input: "おともだち", expected: "おともだち" },
+  { input: "ご飯のおとも", expected: "ごはんのお供" },
+
+  // 追加16: ルール順序による誤爆防止
+  { input: "タマネギを刻む。", expected: "玉ねぎを刻む。" },
+  { input: "ネギを刻む。", expected: "ねぎを刻む。" },
+  { input: "生地をいれる。", expected: "生地を流し入れる。" },
+  { input: "粉をいれる。", expected: "粉類を加える。" },
+  { input: "鍋にいれる。", expected: "鍋に入れる。" }
 ];
 
 console.log("=== Notation Rules Test ===");
@@ -143,6 +157,31 @@ testCases.forEach((tc, index) => {
 console.log("===========================");
 console.log(`Total: ${testCases.length}, Passed: ${passed}, Failed: ${failed}`);
 
-if (failed > 0) {
+// wordPairs配列の順序衝突チェック（あるルールが、後方のルールの部分文字列になっているケースの検知）
+const wordPairsMatch = htmlContent.match(/const wordPairs = (\[[\s\S]*?\]);/);
+let overlapFound = false;
+
+if (wordPairsMatch) {
+  // evalを用いて配列をパース
+  const wordPairs = eval(wordPairsMatch[1]);
+  console.log("\n=== Checking for Rule Overlaps ===");
+  
+  for (let i = 0; i < wordPairs.length; i++) {
+    for (let j = i + 1; j < wordPairs.length; j++) {
+      if (wordPairs[j][0].includes(wordPairs[i][0])) {
+        console.warn(`[WARNING] Overlap detected: '${wordPairs[i][0]}' (index ${i}) will prematurely overwrite part of '${wordPairs[j][0]}' (index ${j}).`);
+        overlapFound = true;
+      }
+    }
+  }
+  
+  if (!overlapFound) {
+    console.log("No overlapping rules found (longer patterns are properly placed first).");
+  }
+} else {
+  console.warn("Could not extract wordPairs for overlap checking.");
+}
+
+if (failed > 0 || overlapFound) {
   process.exit(1);
 }
