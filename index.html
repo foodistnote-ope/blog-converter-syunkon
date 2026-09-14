@@ -1813,7 +1813,8 @@ Headers:
         ['造る', '作る'],
         ['創る', '作る'],
         ['茹でる', 'ゆでる'],
-        ['絡める', 'からめる'],
+        ['絡め', 'からめ'],
+        ['絡ま', 'からま'],
         ['挟む', 'はさむ'],
         ['揉む', 'もむ'],
         ['千切り', 'せん切り'],
@@ -1823,9 +1824,8 @@ Headers:
         ['剥いだ', 'はいだ'],
         ['潰す', 'つぶす'],
         ['揃える', 'そろえる'],
-        ['乗せる', 'のせる'],
-        ['乗せて', 'のせて'],
-        ['載せる', 'のせる'],
+        ['乗せ', 'のせ'],
+        ['載せ', 'のせ'],
         ['染みる', 'しみる'],
         ['振る', 'ふる'],
         ['済ませる', 'すませる'],
@@ -2039,6 +2039,17 @@ Headers:
         }
       }
 
+      if (matIdx > -1 && stepIdx === -1) {
+        // 材料見出しはあるが作り方見出しがない場合、材料見出し以降で最初に「1.」「①」「１．」「1、」等で始まる行を探す
+        const matAfterText = text.slice(matIdx);
+        // 行頭が 1. 1、 ① １． １、 のいずれかで始まる行を探す
+        const firstStepMatch = matAfterText.match(/^[ \t]*(?:1[.\u3001]|１[．\u3001]|①)/m);
+        if (firstStepMatch) {
+          stepIdx = matIdx + firstStepMatch.index;
+          stepLabel = "";
+        }
+      }
+
       if (matIdx === -1 && stepIdx === -1) {
         // Can't detect structure, put everything in intro
         result.intro = applyRegulations(text.trim());
@@ -2059,13 +2070,13 @@ Headers:
         let matText = text.slice(matStart, matEnd).trim();
 
         // Extract servings from header (e.g. "2人分" or "4人前")
-        const servMatch = matText.match(/^[（(]?(\d+[～〜\-]?\d*\s*[人名個杯合]分?[前]?)[）)]?/);
+        const servMatch = matText.match(/^[（(]?([0-9０-９]+[～〜\-]?[0-9０-９]*\s*[人名個杯合]分?[前]?)[）)]?/);
         if (servMatch) {
           result.servings = applyRegulations(servMatch[1]);
           matText = matText.slice(servMatch[0].length).trim();
         } else {
           // Check in the remaining text
-          const s2 = matText.match(/(\d+[～〜\-]?\d*\s*[人名個杯合]分?[前]?)/);
+          const s2 = matText.match(/([0-9０-９]+[～〜\-]?[0-9０-９]*\s*[人名個杯合]分?[前]?)/);
           if (s2) result.servings = applyRegulations(s2[1]);
         }
 

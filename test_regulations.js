@@ -45,7 +45,23 @@ const testCases = [
   { input: "3度目の正直", expected: "3度目の正直" },
   // 7. 余る
   { input: "野菜があまる場合は...", expected: "野菜が余る場合は…" },
-  { input: "あまったご飯で", expected: "余ったごはんで" } // ご飯 → ごはん のルールも適用される
+  { input: "あまったご飯で", expected: "余ったごはんで" }, // ご飯 → ごはん のルールも適用される
+  
+  // 追加1: Aの後のスペースは材料名の中だけで必要（ここでは単純置換のテストなので、applyRegulations 単体の挙動を確認）
+  // 実際には A 砂糖 等は extractSections 内で処理されるが、
+  // applyRegulations自体は "合わせたA をかけ" などを変換しない（何もしない）ことを確認する
+  { input: "合わせたA をかけ", expected: "合わせたA をかけ" }, // 既にスペースがあればそのまま（変更しない）
+  { input: "合わせたAをかけ", expected: "合わせたAをかけ" }, // 勝手にスペースを入れない
+  
+  // 追加2: 絡まる系の変換
+  { input: "タレを絡まって食べる。", expected: "たれをからまって食べる。" },
+  { input: "ソースがからまる", expected: "ソースがからまる" }, // 既にひらがな
+  { input: "全体に絡める。", expected: "全体にからめる。" },
+  
+  // 追加3: 乗せ系の変換
+  { input: "お皿に乗せた。", expected: "お皿にのせた。" },
+  { input: "野菜を乗せます。", expected: "野菜をのせます。" },
+  { input: "上に載せる", expected: "上にのせる" }
 ];
 
 console.log("=== Notation Rules Test ===");
