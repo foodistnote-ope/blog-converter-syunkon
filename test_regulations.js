@@ -99,7 +99,16 @@ const testCases = [
   
   // 追加11: 「剥がれ」
   { input: "皮が剥がれる。", expected: "皮がはがれる。" },
-  { input: "焦げが剥がれた。", expected: "焦げがはがれた。" }
+  { input: "焦げが剥がれた。", expected: "焦げがはがれた。" },
+
+  // 追加12: 行頭のA+日本語
+  { input: "Aチューブのおろししょうが", expected: "A チューブのおろししょうが" },
+  { input: "  B砂糖", expected: "  B 砂糖" },
+  { input: "合わせたAをかけ", expected: "合わせたAをかけ" },
+  
+  // 追加13: 蓋
+  { input: "蓋をする。", expected: "ふたをする。" },
+  { input: "鍋の蓋を開ける。", expected: "鍋のふたを開ける。" }
 ];
 
 console.log("=== Notation Rules Test ===");
