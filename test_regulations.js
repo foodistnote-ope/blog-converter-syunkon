@@ -108,7 +108,18 @@ const testCases = [
   
   // 追加13: 蓋
   { input: "蓋をする。", expected: "ふたをする。" },
-  { input: "鍋の蓋を開ける。", expected: "鍋のふたを開ける。" }
+  { input: "鍋の蓋を開ける。", expected: "鍋のふたを開ける。" },
+
+  // 追加14: カタカナ誤爆ガード
+  { input: "バニラアイスを添える。", expected: "バニラアイスを添える。" },
+  { input: "マニラ麻", expected: "マニラ麻" },
+  { input: "ニラ玉を作る。", expected: "にら玉を作る。" },
+  { input: "人気タレントが来店。", expected: "人気タレントが来店。" },
+  { input: "タレコミがある。", expected: "タレコミがある。" },
+  { input: "タレをかける。", expected: "たれをかける。" },
+  { input: "エビデンスを示す。", expected: "エビデンスを示す。" },
+  { input: "エビアンを飲む", expected: "エビアンを飲む" },
+  { input: "エビフライを作る", expected: "えびフライを作る" }
 ];
 
 console.log("=== Notation Rules Test ===");
